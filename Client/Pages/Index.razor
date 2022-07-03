@@ -1,0 +1,143 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.Components.Authorization;
+@using SyncfusionHelpDeskClient.Shared
+@inject HttpClient Http
+@inject IHttpClientFactory ClientFactory
+
+<AuthorizeView Roles="@ADMINISTRATION_ROLE">
+    <p>You are an Administrator</p>
+</AuthorizeView>
+<SfToast ID="toast_default" Height="50"
+         @ref="ToastObj"
+         Title="Help Desk Ticket"
+         Content="@ToastContent">
+    <ToastPosition X="Right"></ToastPosition>
+</SfToast>
+<h3>New Help Desk Ticket</h3>
+<br />
+<EditForm ID="new-doctor-form" Model="@objHelpDeskTicket"
+          OnValidSubmit="@HandleValidSubmit">
+    <DataAnnotationsValidator></DataAnnotationsValidator>
+    <div>
+        <SfDropDownList TItem="HelpDeskStatus" TValue="string"
+                        PopupHeight="230px"
+                        Placeholder="Ticket Status"
+                        DataSource="@HelpDeskStatus.Statuses"
+                        FloatLabelType="@FloatLabelType.Always"
+                        @bind-Value="@objHelpDeskTicket.TicketStatus">
+            <DropDownListFieldSettings Text="Text"
+                                       Value="ID">
+            </DropDownListFieldSettings>
+        </SfDropDownList>
+    </div>
+    <div>
+        <SfDatePicker ID="TicketDate" Placeholder="Ticket Date"
+                      FloatLabelType="@FloatLabelType.Always"
+                      @bind-Value="@objHelpDeskTicket.TicketDate"
+                      Max="DateTime.Now"
+                      ShowClearButton="false"></SfDatePicker>
+        <ValidationMessage For="@(() => objHelpDeskTicket.TicketDate)" />
+    </div>
+    <div>
+        <SfTextBox Placeholder="Ticket Description"
+                   FloatLabelType="@FloatLabelType.Always"
+                   @bind-Value="@objHelpDeskTicket.TicketDescription">
+
+        </SfTextBox>
+        <ValidationMessage For="@(() => objHelpDeskTicket.TicketDescription)" />
+    </div>
+    <div>
+        <SfTextBox Placeholder="Requester Email"
+                   FloatLabelType="@FloatLabelType.Always"
+                   @bind-Value="@objHelpDeskTicket.TicketRequesterEmail">
+
+        </SfTextBox>
+        <ValidationMessage For="@(() => objHelpDeskTicket.TicketRequesterEmail)" />
+    </div>
+    <br /><br />
+    <div class="e-footer-content">
+        <div class="button-container">
+            <button type="submit" class="e-btn e-normal e-primary">Save</button>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    string ADMINISTRATION_ROLE = "Administrators";
+    SfToast? ToastObj;
+    private string ToastContent { get; set; } = "";
+
+    // HttpClient to allow anonymous http calls.
+    HttpClient? NoAuthenticationClient;
+
+    // Global property for the Help Desk Ticket.
+    HelpDeskTicket objHelpDeskTicket =
+    new HelpDeskTicket()
+        {
+            TicketStatus = "New",
+            TicketDate = DateTime.Now
+        };
+
+    protected override void OnInitialized()
+    {
+        // Create a HttpClient to use for non-authenticated calls.
+        NoAuthenticationClient =
+             ClientFactory.CreateClient(
+                 "ServerAPI.NoAuthenticationClient");
+    }
+
+    public async Task HandleValidSubmit(EditContext context)
+    {
+        try
+        {
+            // Save the new Help Desk Ticket.
+            // Create a new GUID for this Help Desk Ticket.
+            objHelpDeskTicket.TicketGuid =
+                System.Guid.NewGuid().ToString();
+
+            if (NoAuthenticationClient != null)
+            {
+                await NoAuthenticationClient.PostAsJsonAsync(
+                    "SyncfusionHelpDesk", objHelpDeskTicket);
+
+                // Send Email
+                HelpDeskEmail objHelpDeskEmail = new HelpDeskEmail();
+                objHelpDeskEmail.EmailType = "Help Desk Ticket Created";
+                objHelpDeskEmail.EmailAddress = "";
+                objHelpDeskEmail.TicketGuid = objHelpDeskTicket.TicketGuid;
+
+                await NoAuthenticationClient.PostAsJsonAsync(
+                    "Email", objHelpDeskEmail);
+            }
+
+            // Clear the form.
+            objHelpDeskTicket =
+                new HelpDeskTicket()
+                    {
+                        TicketStatus = "New",
+                        TicketDate = DateTime.Now
+                    };
+
+            // Show the Toast.
+            ToastContent = "Saved!";
+
+            StateHasChanged();
+
+            if (ToastObj != null)
+            {
+                await this.ToastObj.ShowAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastContent = ex.Message;
+
+            StateHasChanged();
+
+            if (ToastObj != null)
+            {
+                await this.ToastObj.ShowAsync();
+            }
+        }
+    }
+}

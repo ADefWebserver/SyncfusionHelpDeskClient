@@ -1,0 +1,215 @@
+﻿@page "/administration"
+@using SyncfusionHelpDeskClient.Shared
+@inject HttpClient Http
+@inject IHttpClientFactory ClientFactory
+
+@*AuthorizeView control ensures that *@
+@*Only users in the Administrators role can view this content*@
+<AuthorizeView Roles="Administrators">
+    <div>
+        <div id="target" style="height: 500px;">
+            <SfGrid ID="Grid"
+                    @ref="gridObj"
+                    DataSource="@colHelpDeskTickets"
+                    AllowPaging="true"
+                    AllowSorting="true"
+                    AllowResizing="true"
+                    AllowReordering="true">
+                <SfDataManager Url="SyncfusionHelpDesk" Adaptor="Adaptors.WebApiAdaptor">
+                </SfDataManager>
+                <GridPageSettings PageSize="5"></GridPageSettings>
+                <GridEvents CommandClicked="OnCommandClicked"
+                            TValue="HelpDeskTicket">
+                </GridEvents>
+                <GridColumns>
+                    <GridColumn HeaderText="" TextAlign="TextAlign.Left" Width="150">
+                        <GridCommandColumns>
+                            <GridCommandColumn Type=CommandButtonType.Edit
+                                               ButtonOption="@(new CommandButtonOptions()
+                                                { Content = "Edit" })">
+                            </GridCommandColumn>
+                            <GridCommandColumn Type=CommandButtonType.Delete
+                                               ButtonOption="@(new CommandButtonOptions()
+                                                { Content = "Delete" })">
+                            </GridCommandColumn>
+                        </GridCommandColumns>
+                    </GridColumn>
+                    <GridColumn IsPrimaryKey="true" Field=@nameof(HelpDeskTicket.Id)
+                                HeaderText="ID #" TextAlign="@TextAlign.Left"
+                                Width="70">
+                    </GridColumn>
+                    <GridColumn Field=@nameof(HelpDeskTicket.TicketStatus)
+                                HeaderText="Status" TextAlign="@TextAlign.Left"
+                                Width="80">
+                    </GridColumn>
+                    <GridColumn Field=@nameof(HelpDeskTicket.TicketDate)
+                                HeaderText="Date" TextAlign="@TextAlign.Left"
+                                Width="80">
+                    </GridColumn>
+                    <GridColumn Field=@nameof(HelpDeskTicket.TicketDescription)
+                                HeaderText="Description" TextAlign="@TextAlign.Left"
+                                Width="150">
+                    </GridColumn>
+                    <GridColumn Field=@nameof(HelpDeskTicket.TicketRequesterEmail)
+                                HeaderText="Requester" TextAlign="@TextAlign.Left"
+                                Width="150">
+                    </GridColumn>
+                </GridColumns>
+            </SfGrid>
+        </div>
+    </div>
+    <SfDialog Target="#target"
+              Width="100px"
+              Height="130px"
+              IsModal="true"
+              ShowCloseIcon="false"
+              @bind-Visible="DeleteRecordConfirmVisibility">
+        <DialogTemplates>
+            <Header> DELETE RECORD ? </Header>
+            <Content>
+                <div class="button-container">
+                    <button type="submit"
+                            class="e-btn e-normal e-primary"
+                            @onclick="ConfirmDeleteYes">
+                        Yes
+                    </button>
+                    <button type="submit"
+                            class="e-btn e-normal"
+                            @onclick="ConfirmDeleteNo">
+                        No
+                    </button>
+                </div>
+            </Content>
+        </DialogTemplates>
+    </SfDialog>
+        <SfDialog Target="#target"
+                Width="500px"
+                Height="500px"
+                IsModal="true"
+                ShowCloseIcon="true"
+                @bind-Visible="EditDialogVisibility">
+        <DialogTemplates>
+            <Header> EDIT TICKET # @SelectedTicket.Id</Header>
+            <Content>
+                <EditTicket SelectedTicket="@SelectedTicket" />
+            </Content>
+            <FooterTemplate>
+                <div class="button-container">
+                    <button type="submit"
+                            class="e-btn e-normal e-primary"
+                            @onclick="SaveTicket">
+                        Save
+                    </button>
+                </div>
+            </FooterTemplate>
+        </DialogTemplates>
+    </SfDialog>
+
+</AuthorizeView>
+@code {
+    #nullable disable
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    // SfDataManager calls the Get method in the SyncfusionHelpDesk
+    // controller in the server project that the
+    // SfGrid will use to only pull records for the
+    // page that is currently selected.
+    public IQueryable<HelpDeskTicket> colHelpDeskTickets { get; set; }
+
+    // Global property for the Help Desk Ticket.
+    private HelpDeskTicket SelectedTicket = new HelpDeskTicket();
+
+    // Property to control the delete dialog.
+    public bool DeleteRecordConfirmVisibility { get; set; } = false;
+
+    public async void OnCommandClicked(
+               CommandClickEventArgs<HelpDeskTicket> args)
+    {
+        if (args.CommandColumn.ButtonOption.Content == "Delete")
+        {
+            // We only need the TicketGuid
+            // of the selected Help Desk Ticket.
+            SelectedTicket = new HelpDeskTicket();
+            SelectedTicket.TicketGuid = args.RowData.TicketGuid;
+
+            // Open Delete confirmation dialog.
+            this.DeleteRecordConfirmVisibility = true;
+            StateHasChanged();
+        }
+
+        if (args.CommandColumn.ButtonOption.Content == "Edit")
+        {
+            // Get the selected Help Desk Ticket.
+            SelectedTicket =
+                await Http.GetFromJsonAsync<HelpDeskTicket>(
+                    "Email?HelpDeskTicketGuid=" +
+                    args.RowData.TicketGuid);
+
+            // Open the Edit dialog.
+            this.EditDialogVisibility = true;
+            StateHasChanged();
+        }
+    }
+
+    public void ConfirmDeleteNo()
+    {
+        // Open the dialog
+        // to give the user a chance
+        // to confirm they want to delete the record.
+        this.DeleteRecordConfirmVisibility = false;
+    }
+
+    SfGrid<HelpDeskTicket> gridObj;
+
+    public async void ConfirmDeleteYes()
+    {
+        // The user selected Yes to delete the
+        // selected Help Desk Ticket.
+        // Delete the record.
+        await Http.DeleteAsync(
+            "SyncfusionHelpDesk?HelpDeskTicketGuid=" +
+            SelectedTicket.TicketGuid);
+
+        // Close the dialog.
+        this.DeleteRecordConfirmVisibility = false;
+        StateHasChanged();
+
+        // Refresh the SfGrid
+        // so the deleted record will not show.
+        await gridObj.Refresh();
+    }
+
+    public bool EditDialogVisibility { get; set; } = false;
+
+    public async Task SaveTicket()
+    {
+        // Update the selected Help Desk Ticket.
+        await Http.PutAsJsonAsync(
+        "SyncfusionHelpDesk", SelectedTicket);
+
+        // Close the Edit dialog.
+        this.EditDialogVisibility = false;
+
+        // Refresh the SfGrid
+        // so the changes to the selected
+        // Help Desk Ticket are reflected.
+        await gridObj.Refresh();
+
+        // Send Email
+        HelpDeskEmail objHelpDeskEmail =
+            new HelpDeskEmail();
+
+        objHelpDeskEmail.EmailType =
+            "Help Desk Ticket Updated";
+
+        objHelpDeskEmail.EmailAddress =
+            SelectedTicket.TicketRequesterEmail;
+
+        objHelpDeskEmail.TicketGuid =
+            SelectedTicket.TicketGuid;
+
+        await Http.PostAsJsonAsync(
+        "Email", objHelpDeskEmail);
+    }
+}
