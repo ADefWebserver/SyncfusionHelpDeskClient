@@ -1,9 +1,9 @@
-# NOTE: Oqtane.SyncfusionHelpDesk is [at this location](https://github.com/ADefWebserver/Oqtane.SyncfusionHelpDesk)
-
 # SyncfusionHelpDesk WebAssembly
 
 ![image](https://user-images.githubusercontent.com/1857799/177015099-b270961a-eb97-41ad-89be-100ee9391c47.png)
 
+## Covered in the Book:
+[Blazor WebAssembly Succinctly](https://www.syncfusion.com/succinctly-free-ebooks/blazor-webassembly-succinctly)
 
 ### To Install
 
