@@ -5,6 +5,10 @@
 ## Covered in the Book:
 [Blazor WebAssembly Succinctly](https://www.syncfusion.com/succinctly-free-ebooks/blazor-webassembly-succinctly)
 
+## Add Syncfusion License
+1) [Get a Free Syncfusion License at this link](https://www.syncfusion.com/account/manage-trials/start-trials)
+2) Update *Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense* in *SyncfusionHelpDeskClient.Client/Program.cs*
+
 ### To Install
 
 1) Create a Database on your SQL server, and run scripts in **!SQL directory**
