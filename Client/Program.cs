@@ -25,7 +25,10 @@ builder.Services.AddHttpClient("ServerAPI.NoAuthenticationClient",
 
 builder.Services.AddApiAuthorization();
 
-// Syncfusion support
-builder.Services.AddSyncfusionBlazor(options => { options.IgnoreScriptIsolation = false; });
+//Register Syncfusion license 
+Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("{{ ENTER SYNCFUSION LICENSE HERE - See: https://www.syncfusion.com/account/manage-trials/start-trials");
+
+// Add Syncfusion 
+builder.Services.AddSyncfusionBlazor();
 
 await builder.Build().RunAsync();
