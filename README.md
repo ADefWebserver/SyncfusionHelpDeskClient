@@ -9,7 +9,7 @@
 1) [Get a Free Syncfusion License at this link](https://www.syncfusion.com/account/manage-trials/start-trials)
 2) Update *Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense* in *SyncfusionHelpDeskClient.Client/Program.cs*
 
-### To Install
+## To Install
 
 1) Create a Database on your SQL server, and run scripts in **!SQL directory**
 2) Edit *appsettings.json* to set the database connection in the **DefaultConnection** property
@@ -17,12 +17,12 @@
 4) Log out and log back in as **Admin@email**. You will now be the **Administrator** 
 
 
-### To Enable Emails
+## To Enable Emails
 
 1) Get an **API key** from [app.sendgrid.com](https://app.sendgrid.com)
 2) Open **appsettings.json**: 
 - *Uncomment* the '//' before **SENDGRID_APIKEY** and enter your **SendGrid API key** in place of: **{{ uncomment and enter your key from app.sendgrid.com }}**
 - *Uncomment* the '//' before **SenderEmail** and enter your Email address in place of: **{{ uncomment and enter your email address }}**
 
-### Also See
+## Also See
 * [SyncfusionHelpDesk - Sever Side Blazor version](https://github.com/ADefWebserver/SyncfusionHelpDesk)
